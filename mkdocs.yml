@@ -1,3 +1,4 @@
-site_name: 'AWS Blueprint project scaffolding documentation'
+---
+site_name: AWS Blueprint project scaffolding documentation
 nav:
   - Home: index.md
