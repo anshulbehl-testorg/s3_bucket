@@ -1,0 +1,16 @@
+---
+- name: Playbook to configure ansible controller post installation
+  hosts: localhost
+  connection: local
+  vars:
+    - controller_configuration_async_retries: 50
+  pre_tasks:
+    - name: Include vars from controller_configs directory
+      ansible.builtin.include_vars:
+        dir: ./yaml
+        ignore_files: [controller_config.yml.template]
+        extensions: ["yml"]
+  roles:
+    - {role: infra.controller_configuration.projects, when: controller_projects is defined}
+    - {role: infra.controller_configuration.job_templates, when: controller_templates is defined}
+    - {role: infra.controller_configuration.workflow_job_templates, when: controller_workflows is defined}

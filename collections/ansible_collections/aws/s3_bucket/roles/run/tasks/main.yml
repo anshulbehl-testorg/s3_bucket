@@ -1,12 +1,25 @@
 ---
-- name: Debug print task-1
-  ansible.builtin.debug:
-    msg: "This is task-1"
+- name: Run network tasks
+  ansible.builtin.import_tasks:
+    file: 10_network.yml
+  tags: network
 
-- name: Debug print task-2
-  ansible.builtin.debug:
-    msg: "This is task-2"
+- name: Run security group tasks
+  ansible.builtin.import_tasks:
+    file: 20_security_groups.yml
+  tags: sg
 
-- name: Debug print task-3
-  ansible.builtin.debug:
-    msg: "This is task-3"
+- name: Create ec2 instance
+  ansible.builtin.import_tasks:
+    file: 30_ec2_instance.yml
+  tags: ec2
+
+- name: Run teardown tasks
+  ansible.builtin.import_tasks:
+    file: 40_teardown.yml
+  tags: teardown
+
+- name: Print Instance details
+  ansible.builtin.import_tasks:
+    file: 50_instance_details.yml
+  tags: details

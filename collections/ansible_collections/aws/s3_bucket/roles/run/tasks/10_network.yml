@@ -1,0 +1,71 @@
+---
+
+- name: Search for existing VPC
+  amazon.aws.ec2_vpc_net_info:
+    filters:
+      "tag:Name": "{{ tag_name }}-vpc"
+    region: "{{ region }}"
+  register: vpc_info
+
+- name: Create VPC if not exists
+  amazon.aws.ec2_vpc_net:
+    name: "{{ tag_name }}-vpc"
+    cidr_block: "{{ run_vpc_cidr }}"
+    region: "{{ region }}"
+    tags:
+      Name: "{{ tag_name }}-vpc"
+  when: vpc_info.vpcs | length == 0
+  register: vpc
+
+- name: Use existing VPC
+  ansible.builtin.set_fact:
+    vpc_id: "{{ vpc_info.vpcs[0].vpc_id }}"
+  when: vpc_info.vpcs | length > 0
+
+- name: Create Subnet if not exists
+  amazon.aws.ec2_vpc_subnet:
+    vpc_id: "{{ vpc_id | default(vpc.vpc.id) }}"
+    cidr: "{{ run_subnet_cidr }}"
+    region: "{{ region }}"
+    map_public: true
+    tags:
+      Name: "{{ tag_name }}-subnet"
+  register: subnet
+
+- name: Create Internet Gateway if not exists
+  amazon.aws.ec2_vpc_igw:
+    vpc_id: "{{ vpc_id | default(vpc.vpc.id) }}"
+    region: "{{ region }}"
+    tags:
+      Name: "{{ tag_name }}-igw"
+  register: igw
+
+- name: Gather route table information
+  amazon.aws.ec2_vpc_route_table_info:
+    filters:
+      association.main: true
+      vpc-id: "{{ vpc_id | default(vpc.vpc.id) }}"
+    region: "{{ region }}"
+  register: route_table_info
+
+- name: Check if route to Internet Gateway already exists
+  ansible.builtin.set_fact:
+    route_exists: >-
+      {{
+        route_table_info.route_tables[0].routes
+        | selectattr('destination_cidr_block', 'equalto', '0.0.0.0/0')
+        | map(attribute='gateway_id')
+        | list
+        | length > 0
+      }}
+
+- name: Add a route to the Internet Gateway if it doesn't exist
+  amazon.aws.ec2_vpc_route_table:
+    route_table_id: "{{ route_table_info.route_tables[0].route_table_id }}"
+    region: "{{ region }}"
+    vpc_id: "{{ vpc_id | default(vpc.vpc.id) }}"
+    lookup: id
+    routes:
+      - dest: "0.0.0.0/0"
+        gateway_id: "{{ igw.gateway_id }}"
+  when: route_exists is defined and not route_exists

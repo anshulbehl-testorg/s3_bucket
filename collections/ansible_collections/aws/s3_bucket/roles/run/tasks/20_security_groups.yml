@@ -1,0 +1,24 @@
+---
+- name: Retrieve VPC Information
+  amazon.aws.ec2_vpc_net_info:
+    filters:
+      "tag:Name": "{{ tag_name }}-vpc"  # Adjust the filter to match how your VPC is tagged
+    region: "{{ region }}"
+  register: vpc
+
+- name: Create Security Group if not exists
+  amazon.aws.ec2_security_group:
+    name: "{{ tag_name }}-sg"
+    description: "Security group for {{ tag_name }}"
+    vpc_id: "{{ vpc_id | default(vpc.vpcs[0].id) }}"
+    region: "{{ region }}"
+    tags:
+      Name: "{{ tag_name }}-sg"
+    rules:
+      - proto: tcp
+        ports:
+          - 22
+          - 80
+          - 443
+        cidr_ip: "0.0.0.0/0"
+  register: security_group

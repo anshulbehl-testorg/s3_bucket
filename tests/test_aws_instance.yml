@@ -1,0 +1,71 @@
+---
+- name: AWS Playbook to create an instance and run tests
+  hosts: localhost
+  gather_facts: false
+  vars:
+    region_key_map:
+      ap-south-1: "AWS_APSOUTH_KEY"
+      us-east-1: "AWS_EAST_KEY"
+  tasks:
+    - name: Find EC2 instances by tag
+      amazon.aws.ec2_instance_info:
+        filters:
+          "tag:Name": "{{ tag_name }}-instance"
+        region: "{{ region }}"
+      register: ec2_instance
+
+    - name: Set the SSH key content based on the region
+      ansible.builtin.set_fact:
+        ssh_key_content: "{{ lookup('env', region_key_map[region]) }}"
+      no_log: true
+
+    - name: Write the SSH key to a file
+      ansible.builtin.copy:
+        content: "{{ ssh_key_content | replace('\\n', '\n') }}"
+        dest: "/tmp/{{ region }}_key.pem"
+        mode: '0400'
+      no_log: true
+
+    - name: Wait for SSH to become available
+      ansible.builtin.wait_for:
+        host: "{{ ec2_instance.instances[0].public_ip_address }}"
+        port: 22
+        delay: 10
+        timeout: 300
+        state: started
+
+- name: Basic Instance Health Check
+  hosts: all
+  gather_facts: false
+  tasks:
+    - ansible.builtin.set_fact:
+        ansible_ssh_private_key_file: "/tmp/{{ region }}_key.pem"
+      no_log: true
+
+    - ansible.builtin.set_fact:
+        ansible_user: "ec2-user"
+      no_log: true
+
+    - name: Check lsblk output
+      ansible.builtin.command: lsblk
+      register: disk_space
+
+    - name: Display disk space
+      ansible.builtin.debug:
+        var: disk_space.stdout
+
+    - name: Check OS version
+      ansible.builtin.command: cat /etc/os-release
+      register: os_version
+
+    - name: Display OS version
+      ansible.builtin.debug:
+        var: os_version.stdout
+
+    - name: Check system uptime
+      ansible.builtin.command: uptime
+      register: system_uptime
+
+    - name: Display system uptime
+      ansible.builtin.debug:
+        var: system_uptime.stdout

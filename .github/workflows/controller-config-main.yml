@@ -1,0 +1,79 @@
+name: Configure Controller Projects and Jobs
+
+on:
+  push:
+    branches:
+      - 1.0.0
+  workflow_dispatch:
+
+jobs:
+  configure-controller:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Install Ansible
+        run: sudo wget https://github.com/mikefarah/yq/releases/download/v4.12.2/yq_linux_amd64 -O /usr/bin/yq && sudo chmod +x /usr/bin/yq
+
+
+      - name: Update Project and Job Template Names
+        run: |
+          ls -al
+          repo_name=$(basename ${{ github.event.repository.clone_url }} .git)
+          git_url="${{ github.event.repository.clone_url }}"
+          yq e -i ".controller_projects[0].name = \"$(echo BLUEPRINT PROJ-$repo_name | tr '[:lower:]' '[:upper:]')\"" controller_configuration/yaml/controller_config.yml
+          yq e -i ".controller_projects[0].organization = \"Operations\"" controller_configuration/yaml/controller_config.yml
+          yq e -i ".controller_projects[0].scm_url = \"$git_url\"" controller_configuration/yaml/controller_config.yml
+          yq e -i ".controller_projects[0].scm_branch = \"1.0.0\"" controller_configuration/yaml/controller_config.yml
+          #yq e -i ".controller_templates[0].name = \"$(echo BLUEPRINT \/ $repo_name | tr '[:lower:]' '[:upper:]')\"" controller_configuration/yaml/controller_config.yml
+          #yq e -i ".controller_templates[0].project = \"$(echo BLUEPRINT PROJ-$repo_name | tr '[:lower:]' '[:upper:]')\"" controller_configuration/yaml/controller_config.yml
+          #yq e -i ".controller_templates[0].organization = \"Operations\"" controller_configuration/yaml/controller_config.yml
+          
+          # For workflow
+          names=("Network" "Security Group" "EC2 Instance" "Details")
+          for i in {1..4}; do
+            yq e -i ".controller_templates[$i].name = \"$(echo ${names[$((i-1))]}-$repo_name | tr '[:lower:]' '[:upper:]')\"" controller_configuration/yaml/controller_config.yml
+            yq e -i ".controller_templates[$i].organization = \"Operations\"" controller_configuration/yaml/controller_config.yml
+          done
+          yq e -i 'del(.controller_templates[5])' controller_configuration/yaml/controller_config.yml
+          yq e -i 'del(.controller_templates[5])' controller_configuration/yaml/controller_config.yml
+
+          for i in {1..4}; do
+            yq e -i ".controller_templates[$i].project = \"$(echo BLUEPRINT PROJ-$repo_name | tr '[:lower:]' '[:upper:]')\"" controller_configuration/yaml/controller_config.yml
+          done
+
+          for i in {1..4}; do
+            eval "jt_value$i=\$(yq e \".controller_templates[\$i].name\" controller_configuration/yaml/controller_config.yml)"
+          done
+
+
+          # Define the array of job template values
+          jt_values=("$jt_value1" "$jt_value2" "$jt_value3" "$jt_value4")
+
+          # Update the workflow name
+          yq e -i ".controller_workflows[0].name = \"$(echo BLUEPRINT WORKFLOW \/ $repo_name | tr '[:lower:]' '[:upper:]')\"" controller_configuration/yaml/controller_config.yml
+          yq e -i ".controller_workflows[0].organization = \"Operations\"" controller_configuration/yaml/controller_config.yml
+
+          # Loop through the job template values and apply the yq commands
+          for i in {0..3}; do
+            next=$((i + 1))
+            yq e -i ".controller_workflows[0].simplified_workflow_nodes[$i].identifier = \"${jt_values[$i]}\"" controller_configuration/yaml/controller_config.yml
+            yq e -i ".controller_workflows[0].simplified_workflow_nodes[$i].unified_job_template = \"${jt_values[$i]}\"" controller_configuration/yaml/controller_config.yml
+            if [ $next -lt 4 ]; then
+              yq e -i ".controller_workflows[0].simplified_workflow_nodes[$i].success_nodes[0] = \"${jt_values[$next]}\"" controller_configuration/yaml/controller_config.yml
+            fi
+          done
+          yq e -i 'del(.controller_workflows[0].simplified_workflow_nodes[3].success_nodes[] | select(. == "tmp_jt_name5"))' controller_configuration/yaml/controller_config.yml
+          yq e -i 'del(.controller_workflows[0].simplified_workflow_nodes[4])' controller_configuration/yaml/controller_config.yml
+          yq e -i 'del(.controller_workflows[0].simplified_workflow_nodes[4])' controller_configuration/yaml/controller_config.yml
+          yq e -i 'del(.controller_templates[0])' controller_configuration/yaml/controller_config.yml
+
+
+      - name: Run Ansible Playbook to Configure Controller
+        run: ansible-galaxy collection install infra.controller_configuration && ansible-playbook controller_configuration/controller_configuration.yml
+        env:
+          CONTROLLER_HOST: ${{ secrets.CONTROLLER_HOST }}
+          CONTROLLER_USERNAME: ${{ secrets.CONTROLLER_USERNAME }}
+          CONTROLLER_PASSWORD: ${{ secrets.CONTROLLER_PASSWORD }}

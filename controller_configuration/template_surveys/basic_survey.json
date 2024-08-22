@@ -1,0 +1,54 @@
+{
+    "name": "AWS Survey",
+    "description": "AWS Survey",
+    "spec": [
+      {
+        "question_description": "Instance Name",
+        "min": 0,
+        "default": "",
+        "max": 128,
+        "required": true,
+        "choices": "",
+        "new_question": true,
+        "variable": "tag_name",
+        "question_name": "Provide a name for this EC2 Instance.",
+        "type": "text"
+      },
+      {
+        "question_description": "Choose Instance Type",
+        "min": 0,
+        "default": "t3.small",
+        "max": 0,
+        "required": true,
+        "choices": "t2.micro\nt2.small\nt3.small",
+        "new_question": true,
+        "variable": "instance_type",
+        "question_name": "Choose instance type for this EC2 Instance",
+        "type": "multiplechoice"
+      },
+      {
+        "question_description": "Choose Operating system",
+        "min": 0,
+        "default": "RHEL8",
+        "max": 0,
+        "required": true,
+        "choices": "RHEL8\nRHEL9",
+        "new_question": true,
+        "variable": "ami_os",
+        "question_name": "Select Operating system you want to deploy on the EC2 Instance.",
+        "type": "multiplechoice"
+      },
+      {
+        "question_description": "Choosing Region",
+        "min": 0,
+        "default": "ap-south-1",
+        "max": 0,
+        "required": true,
+        "choices": "us-east-1\nap-south-1\nus-west-2",
+        "new_question": true,
+        "variable": "region",
+        "question_name": "Choose AWS Region where the Instance will be deployed",
+        "type": "multiplechoice"
+      }
+    ]
+  }

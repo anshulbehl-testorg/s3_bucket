@@ -1,0 +1,158 @@
+---
+controller_projects:
+- name: tmp_proj_name
+  organization: "Globo Financial Service"
+  allow_override: 'no'
+  scm_branch: main
+  scm_clean: 'no'
+  scm_delete_on_update: 'no'
+  scm_type: git
+  scm_update_on_launch: 'no'
+  scm_url: tmp_proj_url
+  update_project: 'yes'
+
+controller_templates:
+- name: tmp_jt_name
+  job_type: run
+  inventory: Demo Inventory
+  execution_environment: "AWS EE"
+  survey_enabled: true
+  survey: "{{ lookup('template', 'template_surveys/basic_survey.json') | regex_replace('\\n', '') }}"
+  project: tmp_proj_name
+  playbook: aws_playbook.yml
+  organization: "Globo Financial Service"
+  ask_scm_branch_on_launch: 'no'
+  credentials:
+  - AWS Credential
+
+- name: tmp_jt_name1
+  job_type: run
+  inventory: Demo Inventory
+  execution_environment: "AWS EE"
+  project: tmp_proj_name
+  playbook: aws_playbook.yml
+  ask_scm_branch_on_launch: 'no'
+  job_tags: "network"
+  credentials:
+  - AWS Credential
+- name: tmp_jt_name2
+  job_type: run
+  inventory: Demo Inventory
+  execution_environment: "AWS EE"
+  project: tmp_proj_name
+  playbook: aws_playbook.yml
+  ask_scm_branch_on_launch: 'no'
+  job_tags: "sg"
+  credentials:
+  - AWS Credential
+- name: tmp_jt_name3
+  job_type: run
+  inventory: Demo Inventory
+  execution_environment: "AWS EE"
+  project: tmp_proj_name
+  playbook: aws_playbook.yml
+  ask_scm_branch_on_launch: 'no'
+  job_tags: "ec2"
+  credentials:
+  - AWS Credential
+- name: tmp_jt_name4
+  job_type: run
+  inventory: Demo Inventory
+  execution_environment: "AWS EE"
+  project: tmp_proj_name
+  playbook: aws_playbook.yml
+  ask_scm_branch_on_launch: 'no'
+  job_tags: "details"
+  credentials:
+  - AWS Credential
+
+- name: tmp_jt_name5
+  job_type: run
+  inventory: Blueprint AWS Dynamic
+  execution_environment: "AWS EE"
+  project: tmp_proj_name
+  playbook: tests/test_aws_instance.yml
+  ask_scm_branch_on_launch: 'no'
+  credentials:
+  - AWS Credential
+  - AWS Region Keys
+
+- name: tmp_jt_name6
+  job_type: run
+  inventory: Demo Inventory
+  execution_environment: "AWS EE"
+  project: tmp_proj_name
+  playbook: aws_playbook.yml
+  ask_scm_branch_on_launch: 'no'
+  job_tags: "teardown"
+  credentials:
+  - AWS Credential
+
+controller_workflows:
+  - name: tmp_workflow_name
+    description: a basic workflow
+    extra_vars: ''
+    survey_enabled: true
+    allow_simultaneous: false
+    ask_variables_on_launch: false
+    inventory:
+    limit:
+    scm_branch:
+    ask_inventory_on_launch: false
+    ask_scm_branch_on_launch: false
+    ask_limit_on_launch: false
+    webhook_service: ''
+    webhook_credential:
+    organization: Default
+    schedules: []
+    simplified_workflow_nodes:
+      - all_parents_must_converge: false
+        identifier: tmp_jt_name1
+        unified_job_template: tmp_jt_name1
+        credentials: []
+        success_nodes:
+          - tmp_jt_name2
+        failure_nodes: []
+        always_nodes: []
+      - all_parents_must_converge: false
+        identifier: tmp_jt_name2
+        unified_job_template: tmp_jt_name2
+        credentials: []
+        success_nodes:
+          - tmp_jt_name3
+        failure_nodes: []
+        always_nodes: []
+      - all_parents_must_converge: false
+        identifier: tmp_jt_name3
+        unified_job_template: tmp_jt_name3
+        credentials: []
+        success_nodes:
+          - tmp_jt_name4
+      - all_parents_must_converge: false
+        identifier: tmp_jt_name4
+        unified_job_template: tmp_jt_name4
+        credentials: []
+        success_nodes:
+          - tmp_jt_name5
+        failure_nodes: []
+        always_nodes: []
+      - all_parents_must_converge: false
+        identifier: tmp_jt_name5
+        unified_job_template: tmp_jt_name5
+        credentials: []
+        success_nodes:
+          - tmp_jt_name6
+        failure_nodes: []
+        always_nodes: []
+      - all_parents_must_converge: false
+        identifier: tmp_jt_name6
+        unified_job_template: tmp_jt_name6
+        credentials: []
+        success_nodes: []
+        failure_nodes: []
+        always_nodes: []
+    notification_templates_started: []
+    notification_templates_success: []
+    notification_templates_error: []
+    notification_templates_approvals: []
+    survey: "{{ lookup('template', 'template_surveys/basic_survey.json') | regex_replace('\\n', '') }}"

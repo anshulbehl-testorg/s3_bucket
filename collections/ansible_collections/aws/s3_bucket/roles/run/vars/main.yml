@@ -1,0 +1,16 @@
+run_ami_mapping:
+  us-east-1:
+    RHEL8: ami-0b98e4baa65866e4a
+    RHEL9: ami-07f649370edde1945
+  us-west-2:
+    RHEL8: ami-06d6f906f3326e99b
+    RHEL9: ami-0ea562e794fee45c6
+  ap-south-1:
+    RHEL8: ami-03c322da7f85cfd86
+    RHEL9: ami-02c1ed6aaf44207bb
+
+run_vpc_cidr: "10.0.0.0/16"
+run_subnet_cidr: "10.0.1.0/24"
+run_key_name: "wave-demo"
+_volume_size_: "{{ volume_size }}"
+

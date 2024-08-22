@@ -1,5 +1,5 @@
 ---
-- name: Example playbook
+- name: AWS Infrastructure Management
   hosts: localhost
   roles:
     - role: aws.s3_bucket.run

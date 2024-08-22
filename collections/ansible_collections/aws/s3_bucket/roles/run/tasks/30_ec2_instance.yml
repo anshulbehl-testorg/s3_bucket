@@ -1,0 +1,48 @@
+---
+- name: Set AMI ID based on region and OS version
+  ansible.builtin.set_fact:
+    ami_id: "{{ run_ami_mapping[region][ami_os] }}"
+
+- name: Retrieve VPC Information
+  amazon.aws.ec2_vpc_net_info:
+    filters:
+      "tag:Name": "{{ tag_name }}-vpc"  # Adjust the filter to match how your VPC is tagged
+    region: "{{ region }}"
+  register: vpc
+
+- name: Set fact device_name to sda2
+  ansible.builtin.set_fact:
+    device_name: /dev/sda2
+
+- name: Find Subnet by VPC and CIDR
+  amazon.aws.ec2_vpc_subnet_info:
+    filters:
+      vpc-id: "{{ vpc.vpcs[0].vpc_id }}"
+      cidr-block: "{{ run_subnet_cidr }}"
+    region: "{{ region }}"
+  register: subnet_info
+  when: vpc.vpcs | length > 0
+
+- name: Find the Security Group by Name
+  amazon.aws.ec2_security_group_info:
+    filters:
+      "tag:Name": "{{ tag_name }}-sg"
+    region: "{{ region }}"
+  register: security_group_info
+
+- name: Create EC2 Instance if not exists
+  amazon.aws.ec2_instance:
+    name: "{{ tag_name }}-instance"
+    key_name: "{{ run_key_name }}"
+    instance_type: "{{ instance_type }}"
+    image_id: "{{ ami_id }}"
+    network:
+      assign_public_ip: true
+      vpc_subnet_id: "{{ subnet_info.subnets[0].id }}"
+    vpc_subnet_id: "{{ subnet_info.subnets[0].id }}"
+    security_group: "{{ security_group_info.security_groups[0].group_id }}"
+    region: "{{ region }}"
+    tags:
+      Name: "{{ tag_name }}-instance"
+      Type: "wavebp2024-demo"
+  register: ec2_instance
