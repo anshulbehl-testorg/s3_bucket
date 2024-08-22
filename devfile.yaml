@@ -13,3 +13,31 @@ components:
       env:
         - name: KUBEDOCK_ENABLED
           value: "true"
+commands:
+  - id: install-collections
+    exec:
+      component: tooling-container
+      commandLine: ansible-galaxy collection install -r collections/reqs.yml
+      workingDir: ${PROJECT_SOURCE}
+  - id: install-python-dependencies
+    exec:
+      component: tooling-container
+      commandLine: pip install -r requirements.txt
+      workingDir: ${PROJECT_SOURCE}
+  - id: configure-git
+    exec:
+      component: tooling-container
+      commandLine: git config --global user.name "GitHub Action" && git config --global user.email "action@github.com"
+      workingDir: ${PROJECT_SOURCE}
+events:
+  postStart:
+    - install-collections
+    - install-python-dependencies
+    - configure-git
+projects:
+  - name: s3-bucket
+    git:
+      remotes:
+        origin: https://github.com/anshulbehl-testorg/s3_bucket.git
+      checkoutFrom:
+        revision: 1.0.0-devel
